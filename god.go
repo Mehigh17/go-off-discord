@@ -21,6 +21,7 @@ type ChannelMessage struct {
 	ID      string        `json:"id"`
 	Content string        `json:"content"`
 	Author  MessageAuthor `json:"author"`
+	Hit     bool          `json:"hit"`
 }
 
 type ChannelMessagesResponse struct {
@@ -98,7 +99,7 @@ func (client Client) startDeletion(channelID string) {
 
 		for _, messages := range resp.Messages {
 			for _, msg := range messages {
-				if msg.Author.ID == client.Configuration.UserID {
+				if msg.Author.ID == client.Configuration.UserID && msg.Hit {
 					waitTime := 250
 					retries := 0
 					for retries < maxRetries {
@@ -142,8 +143,6 @@ func (client Client) loadMessages(channelID string) (ChannelMessagesResponse, er
 	serverIndexed := false
 	var resp *http.Response
 	for !serverIndexed {
-		println("Requesting messages...")
-
 		resp, err = httpClient.Do(request)
 		if err != nil {
 			return serverResponse, err
