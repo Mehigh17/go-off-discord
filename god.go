@@ -2,11 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/urfave/cli"
 )
 
 type MessageAuthor struct {
@@ -35,23 +39,48 @@ type Client struct {
 }
 
 func main() {
-	if len(os.Args) <= 2 {
-		println("Provide a path to the account configuration and your channels id. (<acc_cfg> <channel ids...>)")
-		return
-	}
-
-	cfg, err := loadConfiguration(os.Args[1])
-	if err != nil {
-		panic(err)
-	}
-
-	channelsIDs := os.Args[2:]
 	const baseURL string = "https://discordapp.com/api/v6/channels"
 
-	client := Client{baseURL, cfg}
+	var accCfgPath string
+	var channelID string
 
-	for _, channelID := range channelsIDs {
+	app := cli.NewApp()
+	app.Name = "GOD (Go Off Discord)"
+	app.Author = "Mihai Stan"
+	app.Version = "1.0.0"
+	app.Usage = "make it an accord"
+	app.Description = "Get off discord completely with a single command."
+	app.Action = func(ctx *cli.Context) error {
+		cfg, err := loadConfiguration(accCfgPath)
+		if err != nil {
+			return errors.New("couldn't load account configuration, please verify your file")
+		}
+
+		client := Client{baseURL, cfg}
 		client.startDeletion(channelID)
+
+		return nil
+	}
+
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:        "account, a",
+			Usage:       "Load account configuration from `FILE`",
+			TakesFile:   true,
+			Required:    true,
+			Destination: &accCfgPath,
+		},
+		cli.StringFlag{
+			Name:        "channel, c",
+			Usage:       "Specify the `ID` of the channel",
+			Required:    true,
+			Destination: &channelID,
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -120,12 +149,12 @@ func (client Client) loadMessages(channelID string) (ChannelMessagesResponse, er
 			return serverResponse, err
 		}
 
-		serverIndexed = resp.StatusCode != http.StatusAccepted
+		serverIndexed = resp.StatusCode == http.StatusOK
 		if serverIndexed {
 			break
 		}
 
-		println("The server has not been yet indexed. Trying again in 1s...")
+		fmt.Printf("The server has not been yet indexed. Trying again in 1s... (Received code: %d) \n", resp.StatusCode)
 		time.Sleep(1 * time.Second)
 	}
 
