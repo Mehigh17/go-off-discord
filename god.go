@@ -47,7 +47,11 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "GOD (Go Off Discord)"
-	app.Author = "Mihai Stan"
+	app.Authors = []*cli.Author{
+		&cli.Author{
+			Name: "Mihai Stan",
+		},
+	}
 	app.Version = "1.0.0"
 	app.Usage = "make it an accord"
 	app.Description = "Get off discord completely with a single command."
@@ -64,14 +68,14 @@ func main() {
 	}
 
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "account, a",
 			Usage:       "Load account configuration from `FILE`",
 			TakesFile:   true,
 			Required:    true,
 			Destination: &accCfgPath,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "channel, c",
 			Usage:       "Specify the `ID` of the channel",
 			Required:    true,
