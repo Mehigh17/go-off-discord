@@ -69,14 +69,16 @@ func main() {
 
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
-			Name:        "account, a",
+			Name:        "account",
 			Usage:       "Load account configuration from `FILE`",
+			Aliases:     []string{"a"},
 			TakesFile:   true,
 			Required:    true,
 			Destination: &accCfgPath,
 		},
 		&cli.StringFlag{
-			Name:        "channel, c",
+			Name:        "channel",
+			Aliases:     []string{"c"},
 			Usage:       "Specify the `ID` of the channel",
 			Required:    true,
 			Destination: &channelID,
