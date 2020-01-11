@@ -52,36 +52,50 @@ func main() {
 			Name: "Mihai Stan",
 		},
 	}
-	app.Version = "1.0.0"
+
+	app.Version = "1.1.0"
 	app.Usage = "make it an accord"
 	app.Description = "Get off discord completely with a single command."
-	app.Action = func(ctx *cli.Context) error {
-		cfg, err := loadConfiguration(accCfgPath)
-		if err != nil {
-			return errors.New("couldn't load account configuration, please verify your file")
-		}
 
-		client := Client{baseURL, cfg}
-		client.startDeletion(channelID)
-
-		return nil
-	}
-
-	app.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "account",
-			Usage:       "Load account configuration from `FILE`",
-			Aliases:     []string{"a"},
-			TakesFile:   true,
-			Required:    true,
-			Destination: &accCfgPath,
-		},
-		&cli.StringFlag{
-			Name:        "channel",
-			Aliases:     []string{"c"},
-			Usage:       "Specify the `ID` of the channel",
-			Required:    true,
-			Destination: &channelID,
+	app.Commands = []*cli.Command{
+		{
+			Name:    "delete",
+			Aliases: []string{"del"},
+			Usage:   "Perform a deletion action on a server or channel",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:        "account",
+					Usage:       "Load account configuration from `FILE`",
+					Aliases:     []string{"a"},
+					TakesFile:   true,
+					Required:    true,
+					Destination: &accCfgPath,
+				},
+			},
+			Subcommands: []*cli.Command{
+				{
+					Name: "channel",
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:        "id",
+							Usage:       "Specify the `ID` of the channel",
+							Required:    true,
+							Destination: &channelID,
+						},
+					},
+					Action: func(ctx *cli.Context) error {
+						cfg, err := loadConfiguration(accCfgPath)
+						if err != nil {
+							return errors.New("couldn't load account configuration, please verify your file")
+						}
+				
+						client := Client{baseURL, cfg}
+						client.startDeletion(channelID)
+				
+						return nil
+					},
+				},
+			},
 		},
 	}
 
