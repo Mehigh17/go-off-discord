@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"github.com/Mehigh17/go-off-discord/discord"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,10 +12,7 @@ import (
 )
 
 func main() {
-	const baseURL string = "https://discordapp.com/api/v6/channels"
-
-	var accCfgPath string
-	var channelID string
+	var accCfgPath, channelID, serverID string
 
 	app := cli.NewApp()
 	app.Name = "GOD (Go Off Discord)"
@@ -60,8 +58,34 @@ func main() {
 							return errors.New("couldn't load account configuration, please verify your file")
 						}
 
-						client := Client{baseURL, cfg}
-						client.startDeletion(channelID)
+						client := discord.Client {
+							Configuration:	cfg,
+						}
+						client.DeleteChannel(channelID)
+
+						return nil
+					},
+				},
+				{
+					Name: "server",
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:        "id",
+							Usage:       "Specify the `ID` of the server",
+							Required:    true,
+							Destination: &serverID,
+						},
+					},
+					Action: func(ctx *cli.Context) error {
+						cfg, err := loadConfiguration(accCfgPath)
+						if err != nil {
+							return errors.New("couldn't load account configuration, please verify your file")
+						}
+
+						client := discord.Client {
+							Configuration:	cfg,
+						}
+						client.DeleteServer(serverID)
 
 						return nil
 					},
@@ -76,8 +100,8 @@ func main() {
 	}
 }
 
-func loadConfiguration(cfgPath string) (AccountConfiguration, error) {
-	cfg := AccountConfiguration{}
+func loadConfiguration(cfgPath string) (discord.AccountConfiguration, error) {
+	cfg := discord.AccountConfiguration{}
 
 	cfgFile, err := ioutil.ReadFile(cfgPath)
 	if err != nil {

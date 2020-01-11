@@ -1,4 +1,4 @@
-package main
+package discord
 
 import (
 	"encoding/json"
@@ -15,10 +15,11 @@ type MessageAuthor struct {
 
 // ChannelMessage represents the message owned by a user sent on a channel.
 type ChannelMessage struct {
-	ID      string        `json:"id"`
-	Content string        `json:"content"`
-	Author  MessageAuthor `json:"author"`
-	Hit     bool          `json:"hit"`
+	ID        string        `json:"id"`
+	ChannelID string        `json:"channel_id"`
+	Content   string        `json:"content"`
+	Author    MessageAuthor `json:"author"`
+	Hit       bool          `json:"hit"`
 }
 
 // ChannelMessagesResponse represents the answer given by the API when a search fetched.
@@ -35,12 +36,25 @@ type AccountConfiguration struct {
 
 // Client represents a GOD client on which commands are executed upon.
 type Client struct {
-	baseURL       string
 	Configuration AccountConfiguration
 }
 
-func (client Client) startDeletion(channelID string) {
-	resp, err := client.loadMessages(channelID)
+const baseURL string = "https://discordapp.com/api/v6"
+
+// DeleteChannel removes all messages sent by the author.
+func (client Client) DeleteChannel(channelID string) {
+	url := fmt.Sprintf("%s/channels/%s/messages/search?author_id=%s", baseURL, channelID, client.Configuration.UserID)
+	client.deleteMessagesAt(url)
+}
+
+// DeleteServer removes all messages sent by the author.
+func (client Client) DeleteServer(serverID string) {
+	url := fmt.Sprintf("%s/guilds/%s/messages/search?author_id=%s", baseURL, serverID, client.Configuration.UserID)
+	client.deleteMessagesAt(url)
+}
+
+func (client Client) deleteMessagesAt(endpointURL string) {
+	resp, err := client.loadMessages(endpointURL)
 	if err != nil {
 		panic(err)
 	}
@@ -59,14 +73,14 @@ func (client Client) startDeletion(channelID string) {
 					for retries < maxRetries {
 						time.Sleep(time.Duration(waitTime) * time.Millisecond)
 
-						err = client.deleteMessage(channelID, msg)
+						err = client.deleteMessage(msg)
 						if err != nil {
 							retries++
 							waitTime += 50
-							fmt.Printf("(%s) %s (retry no. %d/%d, waiting %dms) ['%s']\n", channelID, err, retries, maxRetries, waitTime, msg.Content)
+							fmt.Printf("(%s) %s (retry no. %d/%d, waiting %dms) ['%s']\n", msg.ChannelID, err, retries, maxRetries, waitTime, msg.Content)
 						} else {
 							removedMesages++
-							fmt.Printf("(%s) [%d/%d] Removed message: \"%s\" \n", channelID, removedMesages, initialMsgCount, msg.Content)
+							fmt.Printf("(%s) [%d/%d] Removed message: \"%s\" \n", msg.ChannelID, removedMesages, initialMsgCount, msg.Content)
 							break
 						}
 					}
@@ -74,21 +88,21 @@ func (client Client) startDeletion(channelID string) {
 			}
 		}
 
-		resp, err = client.loadMessages(channelID)
+		// Fetch more messages, discord won't return the entirety of the messages in one request.
+		resp, err = client.loadMessages(endpointURL)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	fmt.Printf("No more messages have been found on channel %s.\n", channelID)
+	fmt.Printf("No more messages have been found on.\n")
 }
 
-func (client Client) loadMessages(channelID string) (ChannelMessagesResponse, error) {
+func (client Client) loadMessages(endpointURL string) (ChannelMessagesResponse, error) {
 	var serverResponse ChannelMessagesResponse
 	httpClient := http.Client{}
 
-	url := fmt.Sprintf("%s/%s/messages/search?author_id=%s", client.baseURL, channelID, client.Configuration.UserID)
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", endpointURL, nil)
 	if err != nil {
 		return serverResponse, err
 	}
@@ -125,8 +139,8 @@ func (client Client) loadMessages(channelID string) (ChannelMessagesResponse, er
 	return serverResponse, nil
 }
 
-func (client Client) deleteMessage(channelID string, message ChannelMessage) error {
-	delurl := fmt.Sprintf("%s/%s/messages/%s", client.baseURL, channelID, message.ID)
+func (client Client) deleteMessage(message ChannelMessage) error {
+	delurl := fmt.Sprintf("%s/channels/%s/messages/%s", baseURL, message.ChannelID, message.ID)
 
 	request, err := http.NewRequest("DELETE", delurl, nil)
 	if err != nil {
