@@ -42,18 +42,18 @@ type Client struct {
 const baseURL string = "https://discordapp.com/api/v6"
 
 // DeleteChannel removes all messages sent by the author.
-func (client Client) DeleteChannel(channelID string) {
+func (client *Client) DeleteChannel(channelID string) {
 	url := fmt.Sprintf("%s/channels/%s/messages/search?author_id=%s", baseURL, channelID, client.Configuration.UserID)
 	client.deleteMessagesAt(url)
 }
 
 // DeleteServer removes all messages sent by the author.
-func (client Client) DeleteServer(serverID string) {
+func (client *Client) DeleteServer(serverID string) {
 	url := fmt.Sprintf("%s/guilds/%s/messages/search?author_id=%s", baseURL, serverID, client.Configuration.UserID)
 	client.deleteMessagesAt(url)
 }
 
-func (client Client) deleteMessagesAt(endpointURL string) {
+func (client *Client) deleteMessagesAt(endpointURL string) {
 	resp, err := client.loadMessages(endpointURL)
 	if err != nil {
 		panic(err)
@@ -98,7 +98,7 @@ func (client Client) deleteMessagesAt(endpointURL string) {
 	fmt.Printf("No more messages have been found on.\n")
 }
 
-func (client Client) loadMessages(endpointURL string) (ChannelMessagesResponse, error) {
+func (client *Client) loadMessages(endpointURL string) (ChannelMessagesResponse, error) {
 	var serverResponse ChannelMessagesResponse
 	httpClient := http.Client{}
 
@@ -139,7 +139,7 @@ func (client Client) loadMessages(endpointURL string) (ChannelMessagesResponse, 
 	return serverResponse, nil
 }
 
-func (client Client) deleteMessage(message ChannelMessage) error {
+func (client *Client) deleteMessage(message ChannelMessage) error {
 	delurl := fmt.Sprintf("%s/channels/%s/messages/%s", baseURL, message.ChannelID, message.ID)
 
 	request, err := http.NewRequest("DELETE", delurl, nil)
